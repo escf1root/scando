@@ -1,15 +1,51 @@
 #!/bin/bash
+VERSION="v1.1.0"
+
 # scando1.sh - Subdomain enumeration tool
 # Author  : escf1root (https://github.com/escf1root)
-# License : MIT - Free to use, modify, and share with attribution.
+# License : LICENSE (BSD 3-Clause License)
+# updated
+
+# Handle --version
+if [[ "$1" == "--version" ]]; then
+    echo "scando1 version $VERSION"
+    exit 0
+fi
+
+# Handle --help
+if [[ "$1" == "--help" ]]; then
+    echo -e "Usage: sudo ./scando1.sh [domain]"
+    echo -e ""
+    echo -e "Optional flags:"
+    echo -e "  --help         Show this help message"
+    echo -e "  --version      Show script version"
+    echo -e "  --update       Update this script and Go-based tools (subfinder, anew)"
+    exit 0
+fi
+
+# Handle --update
+if [[ "$1" == "--update" ]]; then
+    echo "[*] Updating script and Go-based tools..."
+    if [ -d .git ]; then
+        git pull origin main || echo "[!] Git update failed."
+    else
+        echo "[!] This directory is not a Git repository."
+    fi
+
+    echo "[*] Updating Go-based tools..."
+    go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+    go install -v github.com/tomnomnom/anew@latest
+    echo "[+] Update completed."
+    exit 0
+fi
 
 # Clear terminal
 clear
 
 if command -v lolcat &>/dev/null; then
-    toilet -f mono12 -F metal "scando1" | lolcat
+    toilet -f mono12 -F metal "scando" | lolcat
 else
-    toilet -f mono12 -F metal "scando1"
+    toilet -f mono12 -F metal "scando"
 fi
 
 _author_banner() {
