@@ -112,6 +112,15 @@ go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
 go install -v github.com/tomnomnom/anew@latest
 ```
 
+## 📌 Usage
+
+```bash
+git clone https://github.com/escf1root/scando.git
+cd scando
+chmod +x scando1.sh
+sudo ./scando1.sh
+```
+
 ## Contribution, Credits & License
 
 #### Ways to Contribute
