@@ -1,6 +1,6 @@
 <!-- updated -->
 <p align="center">
-  <img src="./image/logo.png" alt="scando logo" width="450"/>
+  <img src="https://github.com/escf1root/scando/raw/main/image/intro.png" width="450" alt="scando preview" />
 </p>
 
 <p align="center">
@@ -22,10 +22,6 @@
   <a href="https://github.com/escf1root/scando">
     <img src="https://img.shields.io/github/languages/top/escf1root/scando" alt="Top Language" />
   </a>
-</p>
-
-<p align="center">
-  <img src="https://github.com/escf1root/scando/raw/main/image/intro.png" width="450" alt="scando preview" />
 </p>
 
 ---
