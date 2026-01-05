@@ -1,139 +1,295 @@
-<!-- updated -->
+<!-- Scando v2 README -->
+
 <p align="center">
-  <img src="https://github.com/escf1root/scando/raw/main/image/intro.png" width="450" alt="scando preview" />
+  <img src="https://github.com/escf1root/scando/raw/main/image/intro.png" width="420" alt="Scando Preview" />
 </p>
 
 <p align="center">
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg" alt="License" />
-  </a>
-  <a href="https://github.com/escf1root/scando">
-    <img src="https://img.shields.io/badge/maintained-yes-brightgreen" alt="Maintained" />
-  </a>
-  <a href="https://www.gnu.org/software/bash/">
-    <img src="https://img.shields.io/badge/Made%20with-Bash-1f425f.svg" alt="Made With Bash" />
-  </a>
-  <a href="https://github.com/escf1root/scando/issues">
-    <img src="https://img.shields.io/github/issues/escf1root/scando" alt="GitHub Issues" />
-  </a>
-  <a href="https://github.com/escf1root/scando/commits/main">
-    <img src="https://img.shields.io/github/last-commit/escf1root/scando" alt="Last Commit" />
-  </a>
-  <a href="https://github.com/escf1root/scando">
-    <img src="https://img.shields.io/github/languages/top/escf1root/scando" alt="Top Language" />
-  </a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/license-BSD--3--Clause-blue.svg" alt="License" /></a>
+  <a href="https://github.com/escf1root/scando"><img src="https://img.shields.io/badge/status-active--development-brightgreen" alt="Status" /></a>
+  <a href="https://github.com/escf1root/scando/issues"><img src="https://img.shields.io/github/issues/escf1root/scando" alt="Issues" /></a>
+  <a href="https://github.com/escf1root/scando/commits/main"><img src="https://img.shields.io/github/last-commit/escf1root/scando" alt="Last Commit" /></a>
 </p>
 
 ---
 
-## 🔍 About `Scando`
+# Scando v2 — Parallel Domain Enumeration Framework
 
-**Scando** is a lightweight, interactive Bash-based subdomain enumeration toolkit designed for bug bounty hunters and penetration testers. It automates reconnaissance by aggregating results from **both passive and active sources** into a unified, deduplicated list in real-time.
+Scando v2 is the **second-generation release** of the Scando project, designed as a **high-performance, parallelized domain and subdomain enumeration framework** built on Bash.
 
-### ✨ Features
+The project focuses on **speed**, **reliability**, and **operational clarity**, making it suitable for both **individual security researchers** and **professional penetration testing workflows**.
 
-- **Efficiency**: Rapidly combines outputs from tools like `subfinder`, `assetfinder`, and `findomain`.
-- **OSINT Integration**: Queries public threat intelligence APIs (crt.sh, AlienVault OTX, URLScan.io) and archives (Wayback Machine).
-- **Output Clarity**: Delivers clean, optimized subdomain lists for further analysis or pipeline integration.
-
-### Purpose
-
-Scando streamlines reconnaissance workflows, replacing manual source coordination with a single automated process—ideal for initial attack surface mapping and critical for time-sensitive security assessments.
-
-#### This version:
-
-1. Merges overlapping details while eliminating redundancy.
-2. Organizes information into clear sections (overview, features, purpose).
-3. Highlights technical scope (Bash, OSINT sources, deduplication).
-4. Emphasizes practical value for security professionals.
-5. Maintains concise, professional language throughout.
+Unlike Scando v1, which relied on sequential execution, Scando v2 introduces a **parallel execution model** that significantly reduces scan time while maintaining deterministic and reproducible results.
 
 ---
 
-## ⚙️ Requirements
+## Project Goals
 
-Make sure the following tools are installed:
+Scando v2 is built with the following objectives:
 
-| Tool          | Description                    |
-| ------------- | ------------------------------ |
-| `go`          | Required for `anew`            |
-| `subfinder`   | Passive subdomain enumeration  |
-| `assetfinder` | Passive subdomain enumeration  |
-| `findomain`   | Fast subdomain finding tool    |
-| `curl`        | API requests to external sites |
-| `jq`          | JSON parsing                   |
-| `toilet`      | ASCII banner                   |
-| `lolcat`      | Colorized output (optional)    |
+- Provide a fast and repeatable enumeration pipeline
+- Maximize utilization of modern multi-core systems
+- Preserve raw data while producing clean final results
+- Remain transparent and auditable (no hidden logic)
+- Maintain backward compatibility with legacy usage patterns
 
 ---
 
-## ⚙️ Setup / Install Dependencies
+## Versioning & Maintenance Policy
 
-To simplify the setup process, `scando` includes an automated installation script to install all required tools and dependencies.
+This repository represents **Scando v2 (actively maintained)**.
 
-### 🔧 One-Line Installation
+Legacy versions are intentionally preserved to ensure:
 
-```bash
-sudo ./setup.sh
+- Reproducibility of old research
+- Compatibility with historical workflows
+- Long-term stability for existing users
+
+| Version | Status | Characteristics                          |
+| ------- | ------ | ---------------------------------------- |
+| v1.x    | Legacy | Sequential execution, minimal automation |
+| v2.x    | Active | Parallel execution, enhanced stability   |
+
+No forced upgrade path is imposed. Users may freely choose the version that best suits their needs.
+
+---
+
+## Architectural Overview
+
+Scando v2 uses a **parallel task orchestration model** where each enumeration source is executed as an independent unit.
+
+Key architectural concepts:
+
+- **Isolation**: Each tool runs independently to prevent cascading failures
+- **Synchronization**: Aggregation occurs only after all tasks complete
+- **Idempotency**: Re-running scans produces consistent output structures
+- **Fail-safe design**: Partial failures do not invalidate entire scans
+
+This approach allows Scando to scale efficiently across multiple tools and data sources.
+
+---
+
+## Core Capabilities
+
+### Parallel Enumeration Engine
+
+- Concurrent execution of all supported enumeration sources
+- Configurable maximum job count based on system capacity
+- Per-tool timeout enforcement
+- Automatic retry mechanism with controlled backoff
+
+This engine is designed to minimize idle CPU time and reduce overall reconnaissance duration.
+
+---
+
+### Stability & Reliability
+
+- Graceful handling of tool crashes and unexpected exits
+- Preservation of partial results
+- Structured execution logs per module
+- Clear separation between raw data and processed output
+
+Failures are isolated and reported without interrupting the full scan lifecycle.
+
+---
+
+### Output & Data Management
+
+Each scan produces a predictable and structured directory layout:
+
+```
+scans/
+└── example_com_parallel/
+    ├── raw/        # Raw output per enumeration source
+    ├── logs/       # Execution logs and error traces
+    ├── stats/      # Metrics, metadata, JSON reports
+    ├── temp/       # Temporary runtime artifacts
+    ├── subdomains.txt
+    └── README.md   # Scan summary and metadata
 ```
 
-This script will:
+This structure is intentionally designed to support:
 
-🔹 Update the package list
-🔹 Install all required APT-based tools:
-(`findomain, assetfinder, jq, curl, unzip, toilet, lolcat`)
-
-🔹 Check for Go installation (required)
-🔹 Install Go-based tools via go install:
-(`subfinder, anew`)
-
-⚠️ Go must be installed manually first. Download it from https://go.dev/dl/
+- Auditability
+- Long-term storage
+- Integration with automation pipelines
 
 ---
 
-### Manual Installation (If Not Using setup.sh)
+### Reporting & Metrics
 
-If you prefer to install everything manually, follow these steps:
+The `stats/report.json` file provides machine-readable insight into each scan:
 
-```bash
-1. Install APT Dependencies (Debian/Ubuntu/Kali)
+- Target domain and scan identifier
+- Execution mode (parallel)
+- Runtime per enumeration source
+- Number of retries and failures
+- Total discovered subdomains
 
-sudo apt update
-sudo apt install -y findomain assetfinder jq curl unzip toilet lolcat
+This makes Scando suitable for integration into CI/CD pipelines or custom reconnaissance dashboards.
 
-2. Install Go Tools
-Make sure Go is installed. Then:
+---
 
-go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
-go install -v github.com/tomnomnom/anew@latest
-```
+### Result Normalization
 
-## 📌 Usage
+- Automatic deduplication across all sources
+- Domain syntax validation
+- Canonical sorting
+- Output compatibility with tools such as `httpx`, `dnsx`, and `nuclei`
+
+The final result is a clean asset list ready for further testing.
+
+---
+
+## Enumeration Sources
+
+### Integrated Tools
+
+- **subfinder** — Passive recursive subdomain enumeration
+- **assetfinder** — Fast discovery via public datasets
+- **findomain** — High-performance passive enumeration
+
+### OSINT & External Data Sources
+
+- Certificate Transparency logs (crt.sh)
+- AlienVault OTX
+- URLScan.io
+- Internet Archive (Wayback Machine)
+
+Each source contributes independently and transparently to the final dataset.
+
+---
+
+## System Requirements
+
+| Dependency | Purpose                    |
+| ---------- | -------------------------- |
+| bash       | Core runtime environment   |
+| go         | Go-based enumeration tools |
+| curl       | HTTP requests              |
+| jq         | JSON parsing               |
+| python3    | API helper scripts         |
+
+Additional tools:
+
+- subfinder
+- assetfinder
+- findomain
+- anew
+
+---
+
+## Installation
+
+### Clone Repository
 
 ```bash
 git clone https://github.com/escf1root/scando.git
 cd scando
-chmod +x scando1.sh
-sudo ./scando1.sh
+chmod +x scando.sh
 ```
 
-## Contribution, Credits & License
+### Dependency Setup
 
-#### Ways to Contribute
+Automatic installer:
 
-- Suggest a new feature or improvement
-- Report bugs or unexpected behavior
-- Fix issues and submit a pull request
-- Help improve or translate the documentation
-- Share the tool with your community
+```bash
+./scando.sh --install
+```
 
-#### Credits
+Manual installation example:
 
-- This project utilizes various open-source tools such as `subfinder`, `assetfinder`, and `findomain`.
-- Parsing and enumeration techniques are inspired by practices used in open-source reconnaissance and OSINT tools.
-- If any logic or code references other open-source projects, proper attribution is provided within the relevant files or sections.
+```bash
+sudo apt update
+sudo apt install -y curl jq python3 assetfinder findomain
 
-#### License
+go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest
+go install github.com/tomnomnom/anew@latest
+```
 
-This project is licensed under the **BSD 3-Clause License**.  
-See the [LICENSE](./LICENSE) file for more information.
+Ensure `$GOPATH/bin` is included in your `$PATH`.
+
+---
+
+## Usage
+
+### Basic Enumeration
+
+```bash
+./scando.sh -d example.com
+```
+
+### Interactive Workflow
+
+Interactive mode allows the user to:
+
+- Define target domain
+- Customize output directory names
+- Control output file naming
+
+### Help Menu
+
+```bash
+./scando.sh -h
+```
+
+---
+
+## Performance Considerations
+
+Typical performance comparison on medium-sized targets:
+
+| Mode       | Estimated Duration |
+| ---------- | ------------------ |
+| Sequential | 120–180 seconds    |
+| Parallel   | 20–35 seconds      |
+
+Actual performance depends on network conditions, enabled sources, and system resources.
+
+---
+
+## Intended Use Cases
+
+Scando v2 is suitable for:
+
+- Initial reconnaissance during bug bounty programs
+- Asset discovery for penetration tests
+- Academic and personal security research
+- Automation-focused reconnaissance pipelines
+
+It is not intended to replace active scanning tools, but rather to complement them by providing high-quality asset discovery.
+
+---
+
+## Legal Disclaimer
+
+This tool is provided strictly for **educational and authorized security testing purposes**.
+
+You must have explicit permission before scanning any target.
+
+The author assumes no responsibility for misuse or legal consequences arising from unauthorized use.
+
+---
+
+## Contributing
+
+Contributions are welcome and encouraged:
+
+- Bug reports
+- Feature suggestions
+- Code improvements
+- Documentation enhancements
+
+All contributions should be clearly documented and tested.
+
+---
+
+## License
+
+This project is licensed under the **BSD 3-Clause License**.
+
+See the `LICENSE` file for full license text.
+
+---
+
+Scando v2 is designed to prioritize **clarity, performance, and reliability**, while preserving long-term usability for both new and legacy users.
