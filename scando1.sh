@@ -67,7 +67,7 @@ _author_banner
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
 if [[ "$EUID" -ne 0 ]]; then
     echo -e "${RED}[!] This script must be run as root.${NC}"
@@ -162,7 +162,7 @@ echo -e "${YELLOW}[*] Scanning subdomains for: ${GREEN}$domain${NC}"
         echo -e "${RED}[ERROR] URLScan.io failed.${NC}"
     fi
 
-    # Web Archive
+    # Web Archives
     echo -e "${YELLOW}[*] Running Web Archive...${NC}"
     if ! curl -s "http://web.archive.org/cdx/search/cdx?url=*.$domain/*&output=json&collapse=urlkey" | \
        jq -r '.[1:][] | .[2]' | grep -Eo "([a-zA-Z0-9._-]+\.)?${escaped_domain}" | sort -u | \
