@@ -1,7 +1,7 @@
 <!-- Scando v2 README -->
 
 <p align="center">
-  <img src="https://github.com/escf1root/scando/raw/main/image/intro.png" width="420" alt="Scando Preview" />
+  <img src="image/imgs.png" width="420" alt="Scando Preview" />
 </p>
 
 <p align="center">
