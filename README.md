@@ -156,7 +156,7 @@ The final result is a clean asset list ready for further testing.
 - URLScan.io
 - Internet Archive (Wayback Machine)
 
-Each source contributes independently and transparently to the final dataset.
+Each sources contributes independently and transparently to the final dataset.
 
 ---
 
