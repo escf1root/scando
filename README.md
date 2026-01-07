@@ -149,7 +149,7 @@ The final result is a clean asset list ready for further testing.
 - **assetfinder** — Fast discovery via public datasets
 - **findomain** — High-performance passive enumeration
 
-### OSINT & External Data Sources
+### OSINT & External Data Source
 
 - Certificate Transparency logs (crt.sh)
 - AlienVault OTX
