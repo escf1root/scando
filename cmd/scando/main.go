@@ -16,15 +16,29 @@ import (
 
 const version = "3.0.0"
 
+// ANSI codes
+const (
+	reset   = "\033[0m"
+	bold    = "\033[1m"
+	dim     = "\033[2m"
+	cyan    = "\033[36m"
+	green   = "\033[32m"
+	yellow  = "\033[33m"
+	red     = "\033[31m"
+	magenta = "\033[35m"
+	blue    = "\033[34m"
+	bCyan   = "\033[96m"  // bright cyan
+	bGreen  = "\033[92m"  // bright green
+	bYellow = "\033[93m"  // bright yellow
+)
+
 const banner = `
-                                        __          
-                                      /\ \           
-      ____    ___     __        ___   \_\ \    ___
-     /',__\  /'___\ /'__ \    /' _ \   /'_ \  / __ \
-    /\__,  \/\ \__//\ \L\.\_ /\ \/\ \/\ \L\ \/\ \L\ \
-     \/\____/\ \____\ \__/.\_\  \_\ \_\ \___,_\ \____/
-      \/___/  \/____/\/__/\/_/ \/_/\/_/\/__,_ /\/___/
-`
+  ███████╗ ██████╗ █████╗ ███╗  ██╗██████╗  ██████╗
+  ██╔════╝██╔════╝██╔══██╗████╗ ██║██╔══██╗██╔═══██╗
+  ███████╗██║     ███████║██╔██╗██║██║  ██║██║   ██║
+  ╚════██║██║     ██╔══██║██║╚████║██║  ██║██║   ██║
+  ███████║╚██████╗██║  ██║██║ ╚███║██████╔╝╚██████╔╝
+  ╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚══╝╚═════╝  ╚═════╝`
 
 var domainRe = regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$`)
 
@@ -50,7 +64,8 @@ func main() {
 
 	// ─── Self Update ─────────────────────────────────────────────────────────
 	if *updateSelf {
-		fmt.Fprintln(os.Stderr, "\033[1m\033[36m[*] Updating scando to the latest version via go install...\033[0m")
+		printHeader()
+		eprintf("\n  %s↻%s  Updating scando to latest version...\n\n", bold+bCyan, reset)
 		cmd := os.Getenv("GO")
 		if cmd == "" {
 			cmd = "go"
@@ -59,18 +74,16 @@ func main() {
 		execCmd.Stdout = os.Stdout
 		execCmd.Stderr = os.Stderr
 		if err := execCmd.Run(); err != nil {
-			fmt.Fprintf(os.Stderr, "\033[31m[!] Update failed: %v\033[0m\n", err)
+			eprintf("\n  %s✗%s  Update failed: %v\n\n", bold+red, reset, err)
 			os.Exit(1)
 		}
-		fmt.Fprintln(os.Stderr, "\033[1m\033[32m[+] Successfully updated scando to latest version!\033[0m")
+		eprintf("\n  %s✔%s  Successfully updated to the latest version!\n\n", bold+bGreen, reset)
 		os.Exit(0)
 	}
 
 	// ─── Banner ──────────────────────────────────────────────────────────────
 	if !*silent {
-		fmt.Fprint(os.Stderr, "\033[1m\033[36m")
-		fmt.Fprintln(os.Stderr, banner)
-		fmt.Fprintf(os.Stderr, "\033[0m  \033[1mScando v%s\033[0m — Parallel Domain Enumeration\n\n", version)
+		printHeader()
 	}
 
 	// ─── Check tools mode ────────────────────────────────────────────────────
@@ -82,16 +95,20 @@ func main() {
 	// ─── Validate domain ─────────────────────────────────────────────────────
 	*domain = cleanDomain(*domain)
 	if *domain == "" {
-		// interactive prompt
 		if !*silent {
-			fmt.Fprint(os.Stderr, "  Enter target domain: ")
+			eprintf("  %s┌%s Enter target domain%s\n", dim+cyan, reset, reset)
+			eprintf("  %s└─›%s ", bold+cyan, reset)
 		}
 		fmt.Scan(domain)
 		*domain = cleanDomain(*domain)
+		if !*silent {
+			eprintf("\n")
+		}
 	}
 
 	if !domainRe.MatchString(*domain) {
-		fatalf("Invalid domain format: %q\n", *domain)
+		eprintf("\n  %s✗%s Invalid domain: %q\n\n", bold+red, reset, *domain)
+		os.Exit(1)
 	}
 
 	// ─── Scan folder ─────────────────────────────────────────────────────────
@@ -103,7 +120,7 @@ func main() {
 	scriptDir, _ := os.Getwd()
 	scanDir := filepath.Join(scriptDir, "scans", *folderName)
 
-	// ─── Build runner config ─────────────────────────────────────────────────
+	// ─── Build runner config ──────────────────────────────────────────────────
 	cfg := runner.Config{
 		Timeout:     time.Duration(*timeout) * time.Second,
 		MaxParallel: *parallel,
@@ -111,13 +128,9 @@ func main() {
 	}
 
 	if !*silent {
-		fmt.Fprintf(os.Stderr, "  \033[1m[*]\033[0m Domain     : %s\n", *domain)
-		fmt.Fprintf(os.Stderr, "  \033[1m[*]\033[0m Scan dir   : %s\n", scanDir)
-		fmt.Fprintf(os.Stderr, "  \033[1m[*]\033[0m Output     : %s\n", *outFile)
-		fmt.Fprintf(os.Stderr, "  \033[1m[*]\033[0m Parallel   : %d\n", *parallel)
-		fmt.Fprintf(os.Stderr, "  \033[1m[*]\033[0m Timeout/src: %ds\n\n", *timeout)
+		printScanInfo(*domain, scanDir, *outFile, *parallel, *timeout)
 		runner.CheckExternalTools()
-		fmt.Fprintln(os.Stderr)
+		eprintf("\n")
 	}
 
 	// ─── Run ─────────────────────────────────────────────────────────────────
@@ -138,10 +151,11 @@ func main() {
 
 	total, err := output.Write(results, opts)
 	if err != nil {
-		fatalf("Output error: %v\n", err)
+		eprintf("\n  %s✗%s  Output error: %v\n\n", bold+red, reset, err)
+		os.Exit(1)
 	}
 
-	// Optional anew piping if requested
+	// Optional anew piping
 	if *useAnew {
 		outPath := filepath.Join(scanDir, *outFile)
 		if data, readErr := os.ReadFile(outPath); readErr == nil {
@@ -150,9 +164,8 @@ func main() {
 		}
 	}
 
-	// ─── Print results ───────────────────────────────────────────────────────
+	// ─── Print results ────────────────────────────────────────────────────────
 	if *silent {
-		// In silent mode: stream final deduplicated domains to stdout
 		outPath := filepath.Join(scanDir, *outFile)
 		data, readErr := os.ReadFile(outPath)
 		if readErr == nil {
@@ -163,9 +176,38 @@ func main() {
 	}
 }
 
-func fatalf(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, "\033[31m[!]\033[0m "+format, args...)
-	os.Exit(1)
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+func eprintf(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+func printHeader() {
+	eprintf("%s%s%s\n", bold+bCyan, banner, reset)
+	eprintf("  %s%s v%s%s  %s—  Parallel Subdomain Enumeration%s\n\n",
+		bold+bGreen, "Scando", version, reset,
+		dim, reset)
+}
+
+func printScanInfo(domain, scanDir, outFile string, parallel, timeout int) {
+	const lineW = 54
+	line := strings.Repeat("─", lineW)
+
+	row := func(label, value string) {
+		fmt.Fprintf(os.Stderr, "  %s│%s  %-14s %s%-*s%s%s│%s\n",
+			bold+cyan, reset,
+			bold+label+reset,
+			dim, lineW-17, value, reset,
+			bold+cyan, reset,
+		)
+	}
+
+	eprintf("  %s┌%s%s%s┐%s\n", bold+cyan, reset, line, bold+cyan, reset)
+	row("Target",   domain)
+	row("Output",   filepath.Join(scanDir, outFile))
+	row("Parallel", fmt.Sprintf("%d sources", parallel))
+	row("Timeout",  fmt.Sprintf("%ds / source", timeout))
+	eprintf("  %s└%s%s%s┘%s\n\n", bold+cyan, reset, line, bold+cyan, reset)
 }
 
 func cleanDomain(raw string) string {
@@ -180,4 +222,3 @@ func cleanDomain(raw string) string {
 	}
 	return strings.TrimSpace(d)
 }
-

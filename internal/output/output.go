@@ -11,6 +11,20 @@ import (
 	"github.com/escf1root/scando/v3/internal/sources"
 )
 
+// ANSI codes
+const (
+	reset   = "\033[0m"
+	bold    = "\033[1m"
+	dim     = "\033[2m"
+	green   = "\033[32m"
+	yellow  = "\033[33m"
+	red     = "\033[31m"
+	cyan    = "\033[36m"
+	magenta = "\033[35m"
+	bGreen  = "\033[92m"
+	bCyan   = "\033[96m"
+)
+
 // Options controls what output.Write produces.
 type Options struct {
 	Domain      string
@@ -21,7 +35,7 @@ type Options struct {
 	Silent      bool
 }
 
-// Write deduplicates all results and writes ONLY the final output file.
+// Write deduplicates all results and writes the final output file.
 func Write(results []*sources.Result, opts Options) (int, error) {
 	// Collect & deduplicate
 	seen := make(map[string]bool)
@@ -58,7 +72,7 @@ func Write(results []*sources.Result, opts Options) (int, error) {
 		return 0, fmt.Errorf("mkdir scan dir: %w", err)
 	}
 
-	// Write merged output (only final subdomains file)
+	// Write merged output
 	outPath := filepath.Join(opts.ScanDir, opts.OutputFile)
 	if err := writeLines(outPath, filtered); err != nil {
 		return 0, fmt.Errorf("write output: %w", err)
@@ -67,26 +81,79 @@ func Write(results []*sources.Result, opts Options) (int, error) {
 	return len(filtered), nil
 }
 
-// PrintReport prints the final human-readable summary to stderr.
+// PrintReport prints the final summary to stderr.
 func PrintReport(results []*sources.Result, opts Options, total int) {
-	const sep = "══════════════════════════════════════════════════════"
-	fmt.Fprintf(os.Stderr, "\n\033[1m\033[32m%s\033[0m\n", sep)
-	fmt.Fprintf(os.Stderr, "\033[1mDomain         :\033[0m %s\n", opts.Domain)
-	fmt.Fprintf(os.Stderr, "\033[1mTotal Subdomains:\033[0m %d\n", total)
-	fmt.Fprintf(os.Stderr, "\033[1mTotal Time     :\033[0m %s\n", opts.TotalTime.Round(time.Millisecond))
-	fmt.Fprintf(os.Stderr, "\033[1mOutput         :\033[0m %s\n",
-		filepath.Join(opts.ScanDir, opts.OutputFile))
+	const lineW = 54
+	line := strings.Repeat("─", lineW)
 
-	fmt.Fprintln(os.Stderr, "\n\033[1m\033[35mTool Performance:\033[0m")
+	// ── Section header ────────────────────────────────────────
+	fmt.Fprintf(os.Stderr, "\n  %s◆ Results%s\n", bold+bCyan, reset)
+	fmt.Fprintf(os.Stderr, "  %s┌%s%s%s┐%s\n", bold+cyan, reset, line, bold+cyan, reset)
+
+	rowVal := func(label, value, valueColor string) {
+		fmt.Fprintf(os.Stderr, "  %s│%s  %-16s %s%-*s%s%s│%s\n",
+			bold+cyan, reset,
+			bold+label+reset,
+			valueColor, lineW-19, value, reset,
+			bold+cyan, reset,
+		)
+	}
+
+	rowVal("Domain",     opts.Domain,                               bold+bCyan)
+	rowVal("Subdomains", fmt.Sprintf("%d found", total),            bold+bGreen)
+	rowVal("Time",       opts.TotalTime.Round(time.Millisecond).String(), dim)
+	rowVal("Saved to",   filepath.Join(opts.ScanDir, opts.OutputFile), dim)
+
+	fmt.Fprintf(os.Stderr, "  %s└%s%s%s┘%s\n", bold+cyan, reset, line, bold+cyan, reset)
+
+	// ── Per-source breakdown ──────────────────────────────────
+	fmt.Fprintf(os.Stderr, "\n  %s◆ Source Breakdown%s\n", bold+magenta, reset)
+	fmt.Fprintf(os.Stderr, "  %s┌%s%s%s┐%s\n", bold+cyan, reset, line, bold+cyan, reset)
+
 	order := []string{
 		"crtsh", "otx", "urlscan", "webarchive",
 		"hackertarget", "threatminer", "rapiddns", "bufferover", "riddler",
 		"subfinder", "assetfinder", "findomain",
 	}
+
 	byName := make(map[string]*sources.Result)
 	for _, r := range results {
 		if r != nil {
 			byName[r.Name] = r
+		}
+	}
+
+	printRow := func(name string, res *sources.Result) {
+		ms := res.Duration.Milliseconds()
+		switch {
+		case res.Skipped:
+			fmt.Fprintf(os.Stderr, "  %s│%s  %s○%s  %-14s  %s%-12s%s  %s%s│%s\n",
+				bold+cyan, reset,
+				dim+yellow, reset,
+				name,
+				dim, "skipped", reset,
+				dim, strings.Repeat(" ", lineW-36), bold+cyan, reset)
+
+		case len(res.Domains) > 0:
+			count := fmt.Sprintf("%d subdomains", len(res.Domains))
+			timing := fmt.Sprintf("%dms", ms)
+			fmt.Fprintf(os.Stderr, "  %s│%s  %s✔%s  %-14s  %s%-20s%s  %s%6s%s  %s│%s\n",
+				bold+cyan, reset,
+				bold+bGreen, reset,
+				name,
+				bold, count, reset,
+				dim, timing, reset,
+				bold+cyan, reset)
+
+		default:
+			timing := fmt.Sprintf("%dms", ms)
+			fmt.Fprintf(os.Stderr, "  %s│%s  %s–%s  %-14s  %s%-20s%s  %s%6s%s  %s│%s\n",
+				bold+cyan, reset,
+				dim, reset,
+				name,
+				dim, "0 subdomains", reset,
+				dim, timing, reset,
+				bold+cyan, reset)
 		}
 	}
 
@@ -95,34 +162,26 @@ func PrintReport(results []*sources.Result, opts Options, total int) {
 		if !ok {
 			continue
 		}
-		ms := res.Duration.Milliseconds()
-		switch {
-		case res.Skipped:
-			fmt.Fprintf(os.Stderr, "  \033[33m⊘\033[0m %-15s  skipped\n", name)
-		case len(res.Domains) > 0:
-			fmt.Fprintf(os.Stderr, "  \033[32m⚡\033[0m %-15s  %4d domains  (%dms)\n", name, len(res.Domains), ms)
-		default:
-			fmt.Fprintf(os.Stderr, "  \033[33m⚠\033[0m %-15s  %4d domains  (%dms)\n", name, len(res.Domains), ms)
-		}
+		printRow(name, res)
 	}
-	// Catch any extra results not in order slice
+	// Extra results not in order list
 	for _, res := range results {
-		if res != nil {
-			found := false
-			for _, name := range order {
-				if name == res.Name {
-					found = true
-					break
-				}
+		if res == nil {
+			continue
+		}
+		inOrder := false
+		for _, n := range order {
+			if n == res.Name {
+				inOrder = true
+				break
 			}
-			if !found {
-				ms := res.Duration.Milliseconds()
-				fmt.Fprintf(os.Stderr, "  \033[32m⚡\033[0m %-15s  %4d domains  (%dms)\n", res.Name, len(res.Domains), ms)
-			}
+		}
+		if !inOrder {
+			printRow(res.Name, res)
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "\033[1m\033[32m%s\033[0m\n\n", sep)
+	fmt.Fprintf(os.Stderr, "  %s└%s%s%s┘%s\n\n", bold+cyan, reset, line, bold+cyan, reset)
 }
 
 func writeLines(path string, lines []string) error {
