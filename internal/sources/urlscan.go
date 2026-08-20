@@ -116,4 +116,5 @@ func (u *URLScan) fetch(ctx context.Context, domain string, client *http.Client)
 		result = append(result, d)
 	}
 	return result, nil
+}
 
