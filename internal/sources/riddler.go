@@ -29,7 +29,8 @@ func (r *Riddler) Enumerate(ctx context.Context, domain string, client *http.Cli
 }
 
 func (r *Riddler) fetch(ctx context.Context, domain string, client *http.Client) ([]string, error) {
-	url := fmt.Sprintf("https://riddler.io/search/exportcsv?q=pld:%s", domain)
+	rootDomain := GetRootDomain(domain)
+	url := fmt.Sprintf("https://riddler.io/search/exportcsv?q=pld:%s", rootDomain)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

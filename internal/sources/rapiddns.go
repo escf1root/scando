@@ -32,10 +32,17 @@ func (r *RapidDNS) Enumerate(ctx context.Context, domain string, client *http.Cl
 var rapidDNSRe = regexp.MustCompile(`[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}`)
 
 func (r *RapidDNS) fetch(ctx context.Context, domain string, client *http.Client) ([]string, error) {
-	// Try the plain-text download endpoint first
-	urls := []string{
-		fmt.Sprintf("https://rapiddns.io/subdomain/%s?full=1&down=1", domain),
-		fmt.Sprintf("https://rapiddns.io/subdomain/%s?full=1", domain),
+	targets := []string{domain}
+	if root := GetRootDomain(domain); root != domain {
+		targets = append(targets, root)
+	}
+
+	urls := []string{}
+	for _, t := range targets {
+		urls = append(urls,
+			fmt.Sprintf("https://rapiddns.io/subdomain/%s?full=1&down=1", t),
+			fmt.Sprintf("https://rapiddns.io/subdomain/%s?full=1", t),
+		)
 	}
 
 	suffix := "." + domain

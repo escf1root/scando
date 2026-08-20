@@ -29,37 +29,47 @@ func (t *ThreatMiner) Enumerate(ctx context.Context, domain string, client *http
 }
 
 func (t *ThreatMiner) fetch(ctx context.Context, domain string, client *http.Client) ([]string, error) {
-	url := fmt.Sprintf("https://api.threatminer.org/v2/domain.php?q=%s&rt=5", domain)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Scando/3.0")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("threatminer returned %d", resp.StatusCode)
+	targets := []string{domain}
+	if root := GetRootDomain(domain); root != domain {
+		targets = append(targets, root)
 	}
 
-	var data struct {
-		StatusCode string   `json:"status_code"`
-		Results    []string `json:"results"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return nil, err
-	}
-
-	suffix := "." + domain
 	seen := make(map[string]bool)
-	for _, h := range data.Results {
-		h = strings.ToLower(strings.TrimSpace(h))
-		if h != "" && (strings.HasSuffix(h, suffix) || h == domain) {
-			seen[h] = true
+	suffix := "." + domain
+
+	for _, target := range targets {
+		url := fmt.Sprintf("https://api.threatminer.org/v2/domain.php?q=%s&rt=5", target)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			continue
+		}
+		req.Header.Set("User-Agent", "Mozilla/5.0")
+
+		resp, err := client.Do(req)
+		if err != nil {
+			continue
+		}
+
+		if resp.StatusCode == 200 {
+			var data struct {
+				StatusCode string   `json:"status_code"`
+				Results    []string `json:"results"`
+			}
+			if json.NewDecoder(resp.Body).Decode(&data) == nil {
+				for _, h := range data.Results {
+					h = strings.ToLower(strings.TrimSpace(h))
+					if h != "" && (strings.HasSuffix(h, suffix) || h == domain) {
+						seen[h] = true
+					}
+				}
+			}
+			resp.Body.Close()
+		} else {
+			resp.Body.Close()
+		}
+
+		if len(seen) > 0 {
+			break
 		}
 	}
 

@@ -3,6 +3,7 @@ package sources
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -57,3 +58,24 @@ func retry(maxAttempts int, delay time.Duration, fn func() ([]string, error)) ([
 	}
 	return result, maxAttempts, lastErr
 }
+
+// GetRootDomain extracts base domain from a hostname (e.g. "sub.example.com" -> "example.com", "milcsirt-tni.mil.id" -> "tni.mil.id").
+func GetRootDomain(domain string) string {
+	parts := strings.Split(domain, ".")
+	if len(parts) <= 2 {
+		return domain
+	}
+	if len(parts) >= 3 {
+		last := parts[len(parts)-1]
+		prev := parts[len(parts)-2]
+		// Handle country code TLDs like .mil.id, .co.uk, .com.au
+		if len(last) == 2 && len(prev) <= 4 {
+			if len(parts) >= 4 {
+				return strings.Join(parts[len(parts)-3:], ".")
+			}
+			return domain
+		}
+	}
+	return strings.Join(parts[len(parts)-2:], ".")
+}
+

@@ -126,18 +126,21 @@ func (r *Runner) Run(domain string) []*sources.Result {
 
 func (r *Runner) printSourceResult(res *sources.Result, done, total int) {
 	ms := res.Duration.Milliseconds()
+	// Clear the progress bar line completely before printing status
+	fmt.Fprint(os.Stderr, "\033[2K\r")
+
 	switch {
 	case res.Skipped:
-		fmt.Fprintf(os.Stderr, "\r  %s⊘%s %-15s skipped (not installed)\n",
+		fmt.Fprintf(os.Stderr, "  %s⊘%s %-15s skipped (not installed)\n",
 			colorYellow, colorReset, res.Name)
 	case res.Err != nil && len(res.Domains) == 0:
-		fmt.Fprintf(os.Stderr, "\r  %s✗%s %-15s 0 domains (%dms)\n",
+		fmt.Fprintf(os.Stderr, "  %s✗%s %-15s 0 domains (%dms)\n",
 			colorRed, colorReset, res.Name, ms)
 	case len(res.Domains) == 0:
-		fmt.Fprintf(os.Stderr, "\r  %s⚠%s %-15s 0 domains (%dms) [att:%d]\n",
+		fmt.Fprintf(os.Stderr, "  %s⚠%s %-15s 0 domains (%dms) [att:%d]\n",
 			colorYellow, colorReset, res.Name, ms, res.Attempts)
 	default:
-		fmt.Fprintf(os.Stderr, "\r  %s⚡%s %-15s %4d domains (%dms) [att:%d]\n",
+		fmt.Fprintf(os.Stderr, "  %s⚡%s %-15s %4d domains (%dms) [att:%d]\n",
 			colorGreen, colorReset, res.Name, len(res.Domains), ms, res.Attempts)
 	}
 	r.printProgress(done, total)
@@ -159,7 +162,7 @@ func (r *Runner) printProgress(done, total int) {
 			bar[i] = '-'
 		}
 	}
-	fmt.Fprintf(os.Stderr, "\r  %s[%s%s%s%s]%s %3d%% (%d/%d)",
+	fmt.Fprintf(os.Stderr, "\033[2K\r  %s[%s%s%s%s]%s %3d%% (%d/%d)",
 		colorBold,
 		colorGreen, string(bar[:filled]),
 		colorReset+colorBold, string(bar[filled:]),

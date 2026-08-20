@@ -31,9 +31,13 @@ func (c *CrtSh) Enumerate(ctx context.Context, domain string, client *http.Clien
 }
 
 func (c *CrtSh) fetch(ctx context.Context, domain string, client *http.Client) ([]string, error) {
+	rootDomain := GetRootDomain(domain)
 	endpoints := []string{
+		fmt.Sprintf("https://crt.sh/?q=%s&output=json", domain),
 		fmt.Sprintf("https://crt.sh/?q=%%25.%s&output=json", domain),
-		fmt.Sprintf("https://crt.sh/?q=.%s&output=json", domain),
+	}
+	if rootDomain != domain {
+		endpoints = append(endpoints, fmt.Sprintf("https://crt.sh/?q=%s&output=json", rootDomain))
 	}
 
 	seen := make(map[string]bool)
