@@ -43,9 +43,13 @@ func (c *CrtSh) fetch(ctx context.Context, domain string, client *http.Client) (
 	seen := make(map[string]bool)
 	suffix := "." + domain
 
+	var lastErr error
+	successCount := 0
+
 	for _, rawURL := range endpoints {
 		req, err := http.NewRequestWithContext(ctx, "GET", rawURL, nil)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0")
@@ -53,6 +57,7 @@ func (c *CrtSh) fetch(ctx context.Context, domain string, client *http.Client) (
 
 		resp, err := client.Do(req)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 
@@ -61,6 +66,7 @@ func (c *CrtSh) fetch(ctx context.Context, domain string, client *http.Client) (
 				NameValue string `json:"name_value"`
 			}
 			if err := json.NewDecoder(resp.Body).Decode(&entries); err == nil {
+				successCount++
 				for _, e := range entries {
 					for _, name := range strings.Split(e.NameValue, "\n") {
 						name = strings.ToLower(strings.TrimSpace(name))
@@ -71,15 +77,22 @@ func (c *CrtSh) fetch(ctx context.Context, domain string, client *http.Client) (
 						}
 					}
 				}
+			} else {
+				lastErr = err
 			}
 			resp.Body.Close()
 		} else {
+			lastErr = fmt.Errorf("crt.sh returned status code %d", resp.StatusCode)
 			resp.Body.Close()
 		}
 	}
 
 	// Recursive HTML fallback for wildcards and deeper results
 	c.fetchHTML(ctx, domain, client, seen)
+
+	if successCount == 0 && len(seen) == 0 && lastErr != nil {
+		return nil, lastErr
+	}
 
 	result := make([]string, 0, len(seen))
 	for d := range seen {

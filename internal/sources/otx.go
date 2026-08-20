@@ -42,19 +42,18 @@ func (o *OTX) fetch(ctx context.Context, domain string, client *http.Client) ([]
 
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
-			break
+			return nil, err
 		}
-		req.Header.Set("User-Agent", "Scando/3.0")
-		req.Header.Set("X-OTX-API-KEY", "")
+		req.Header.Set("User-Agent", "Mozilla/5.0")
 
 		resp, err := client.Do(req)
 		if err != nil {
-			break
+			return nil, err
 		}
 
 		if resp.StatusCode != 200 {
 			resp.Body.Close()
-			break
+			return nil, fmt.Errorf("OTX returned status code %d", resp.StatusCode)
 		}
 
 		var data struct {
@@ -64,7 +63,7 @@ func (o *OTX) fetch(ctx context.Context, domain string, client *http.Client) ([]
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
 			resp.Body.Close()
-			break
+			return nil, err
 		}
 		resp.Body.Close()
 

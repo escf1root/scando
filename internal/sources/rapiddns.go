@@ -48,9 +48,13 @@ func (r *RapidDNS) fetch(ctx context.Context, domain string, client *http.Client
 	suffix := "." + domain
 	seen := make(map[string]bool)
 
+	var lastErr error
+	successCount := 0
+
 	for _, url := range urls {
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0")
@@ -58,10 +62,12 @@ func (r *RapidDNS) fetch(ctx context.Context, domain string, client *http.Client
 
 		resp, err := client.Do(req)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 
 		if resp.StatusCode == 200 {
+			successCount++
 			re := regexp.MustCompile(`[a-zA-Z0-9._-]+\.` + regexp.QuoteMeta(domain))
 			sc := bufio.NewScanner(resp.Body)
 			sc.Buffer(make([]byte, 1<<20), 1<<20)
@@ -75,13 +81,21 @@ func (r *RapidDNS) fetch(ctx context.Context, domain string, client *http.Client
 				}
 			}
 			resp.Body.Close()
+			if err := sc.Err(); err != nil {
+				lastErr = err
+			}
 		} else {
+			lastErr = fmt.Errorf("rapiddns returned status code %d", resp.StatusCode)
 			resp.Body.Close()
 		}
 
 		if len(seen) > 0 {
 			break
 		}
+	}
+
+	if successCount == 0 && len(seen) == 0 && lastErr != nil {
+		return nil, lastErr
 	}
 
 	result := make([]string, 0, len(seen))

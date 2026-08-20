@@ -75,8 +75,6 @@ func New(cfg Config) *Runner {
 		&sources.HackerTarget{},
 		&sources.ThreatMiner{},
 		&sources.RapidDNS{},
-		&sources.BufferOver{},
-		&sources.Riddler{},
 		// External tool wrappers — skipped when binary absent
 		&sources.Subfinder{},
 		&sources.Assetfinder{},

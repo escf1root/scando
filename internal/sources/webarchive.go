@@ -62,10 +62,14 @@ func (w *WebArchive) fetch(ctx context.Context, domain string, client *http.Clie
 		}
 	}
 
+	var lastErr error
+	successCount := 0
+
 	for _, endpoint := range endpoints {
 		reqURL := fmt.Sprintf("%s?%s", endpoint, params.Encode())
 		req, err := http.NewRequestWithContext(ctx, "GET", reqURL, nil)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
@@ -73,25 +77,31 @@ func (w *WebArchive) fetch(ctx context.Context, domain string, client *http.Clie
 
 		resp, err := client.Do(req)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 
 		if resp.StatusCode == 200 {
-			// CDX JSON: [[header], [row1], [row2], ...]
 			var rows [][]string
 			decodeErr := json.NewDecoder(resp.Body).Decode(&rows)
 			resp.Body.Close()
 
-			if decodeErr == nil && len(rows) > 1 {
-				rawURLs := make([]string, 0, len(rows)-1)
-				for _, row := range rows[1:] {
-					if len(row) > 0 {
-						rawURLs = append(rawURLs, row[0])
+			if decodeErr == nil {
+				successCount++
+				if len(rows) > 1 {
+					rawURLs := make([]string, 0, len(rows)-1)
+					for _, row := range rows[1:] {
+						if len(row) > 0 {
+							rawURLs = append(rawURLs, row[0])
+						}
 					}
+					extractFromURLs(rawURLs)
 				}
-				extractFromURLs(rawURLs)
+			} else {
+				lastErr = decodeErr
 			}
 		} else {
+			lastErr = fmt.Errorf("webarchive returned status code %d", resp.StatusCode)
 			resp.Body.Close()
 		}
 
@@ -104,25 +114,38 @@ func (w *WebArchive) fetch(ctx context.Context, domain string, client *http.Clie
 	if len(seen) == 0 {
 		timemapURL := fmt.Sprintf("https://web.archive.org/web/timemap/json?url=%s&matchType=domain&output=json", domain)
 		req, err := http.NewRequestWithContext(ctx, "GET", timemapURL, nil)
-		if err == nil {
+		if err != nil {
+			lastErr = err
+		} else {
 			req.Header.Set("User-Agent", "Mozilla/5.0")
 			resp, err := client.Do(req)
-			if err == nil && resp.StatusCode == 200 {
-				var data [][]string
-				if json.NewDecoder(resp.Body).Decode(&data) == nil {
-					re := regexp.MustCompile(`([a-zA-Z0-9._-]+\.` + regexp.QuoteMeta(domain) + `)`)
-					for _, row := range data[1:] {
-						if len(row) > 2 {
-							m := re.FindStringSubmatch(row[2])
-							if len(m) > 1 {
-								seen[strings.ToLower(m[1])] = true
+			if err != nil {
+				lastErr = err
+			} else {
+				if resp.StatusCode == 200 {
+					var data [][]string
+					if json.NewDecoder(resp.Body).Decode(&data) == nil {
+						successCount++
+						re := regexp.MustCompile(`([a-zA-Z0-9._-]+\.` + regexp.QuoteMeta(domain) + `)`)
+						for _, row := range data[1:] {
+							if len(row) > 2 {
+								m := re.FindStringSubmatch(row[2])
+								if len(m) > 1 {
+									seen[strings.ToLower(m[1])] = true
+								}
 							}
 						}
 					}
+				} else {
+					lastErr = fmt.Errorf("webarchive timemap returned status code %d", resp.StatusCode)
 				}
 				resp.Body.Close()
 			}
 		}
+	}
+
+	if successCount == 0 && len(seen) == 0 && lastErr != nil {
+		return nil, lastErr
 	}
 
 	result := make([]string, 0, len(seen))

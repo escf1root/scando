@@ -37,16 +37,21 @@ func (t *ThreatMiner) fetch(ctx context.Context, domain string, client *http.Cli
 	seen := make(map[string]bool)
 	suffix := "." + domain
 
+	var lastErr error
+	successCount := 0
+
 	for _, target := range targets {
 		url := fmt.Sprintf("https://api.threatminer.org/v2/domain.php?q=%s&rt=5", target)
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 		req.Header.Set("User-Agent", "Mozilla/5.0")
 
 		resp, err := client.Do(req)
 		if err != nil {
+			lastErr = err
 			continue
 		}
 
@@ -55,22 +60,32 @@ func (t *ThreatMiner) fetch(ctx context.Context, domain string, client *http.Cli
 				StatusCode string   `json:"status_code"`
 				Results    []string `json:"results"`
 			}
-			if json.NewDecoder(resp.Body).Decode(&data) == nil {
+			decodeErr := json.NewDecoder(resp.Body).Decode(&data)
+			resp.Body.Close()
+
+			if decodeErr == nil {
+				successCount++
 				for _, h := range data.Results {
 					h = strings.ToLower(strings.TrimSpace(h))
 					if h != "" && (strings.HasSuffix(h, suffix) || h == domain) {
 						seen[h] = true
 					}
 				}
+			} else {
+				lastErr = decodeErr
 			}
-			resp.Body.Close()
 		} else {
+			lastErr = fmt.Errorf("threatminer returned status code %d", resp.StatusCode)
 			resp.Body.Close()
 		}
 
 		if len(seen) > 0 {
 			break
 		}
+	}
+
+	if successCount == 0 && len(seen) == 0 && lastErr != nil {
+		return nil, lastErr
 	}
 
 	result := make([]string, 0, len(seen))

@@ -14,7 +14,7 @@ import (
 	"github.com/escf1root/scando/v3/internal/runner"
 )
 
-const version = "3.0.7"
+const version = "3.0.8"
 
 // ANSI codes
 const (
