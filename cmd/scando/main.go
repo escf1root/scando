@@ -80,14 +80,14 @@ func main() {
 	}
 
 	// ─── Validate domain ─────────────────────────────────────────────────────
-	*domain = strings.ToLower(strings.TrimSpace(*domain))
+	*domain = cleanDomain(*domain)
 	if *domain == "" {
 		// interactive prompt
 		if !*silent {
 			fmt.Fprint(os.Stderr, "  Enter target domain: ")
 		}
 		fmt.Scan(domain)
-		*domain = strings.ToLower(strings.TrimSpace(*domain))
+		*domain = cleanDomain(*domain)
 	}
 
 	if !domainRe.MatchString(*domain) {
@@ -167,3 +167,17 @@ func fatalf(format string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, "\033[31m[!]\033[0m "+format, args...)
 	os.Exit(1)
 }
+
+func cleanDomain(raw string) string {
+	d := strings.ToLower(strings.TrimSpace(raw))
+	d = strings.TrimPrefix(d, "https://")
+	d = strings.TrimPrefix(d, "http://")
+	if idx := strings.Index(d, "/"); idx != -1 {
+		d = d[:idx]
+	}
+	if idx := strings.Index(d, ":"); idx != -1 {
+		d = d[:idx]
+	}
+	return strings.TrimSpace(d)
+}
+
