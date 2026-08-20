@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -45,8 +44,7 @@ var domainRe = regexp.MustCompile(`^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])
 func main() {
 	// ─── Flags ───────────────────────────────────────────────────────────────
 	domain := flag.String("d", "", "Target domain (required)")
-	outFile := flag.String("o", "subdomains.txt", "Output filename")
-	folderName := flag.String("f", "", "Scan folder name (default: <domain>_parallel)")
+	outFile := flag.String("o", "subdomains.txt", "Output filename (written to current directory)")
 	timeout := flag.Int("t", 60, "Per-source timeout in seconds")
 	parallel := flag.Int("p", 8, "Max parallel sources")
 	silent := flag.Bool("silent", false, "Print only discovered domains to stdout")
@@ -111,14 +109,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// ─── Scan folder ─────────────────────────────────────────────────────────
-	if *folderName == "" {
-		safe := strings.ReplaceAll(*domain, ".", "_")
-		*folderName = safe + "_parallel"
-	}
-
-	scriptDir, _ := os.Getwd()
-	scanDir := filepath.Join(scriptDir, "scans", *folderName)
+	// ─── Output dir = current working directory ──────────────────────────────
+	scanDir, _ := os.Getwd()
 
 	// ─── Build runner config ──────────────────────────────────────────────────
 	cfg := runner.Config{
@@ -204,7 +196,7 @@ func printScanInfo(domain, scanDir, outFile string, parallel, timeout int) {
 
 	eprintf("  %s┌%s%s%s┐%s\n", bold+cyan, reset, line, bold+cyan, reset)
 	row("Target",   domain)
-	row("Output",   filepath.Join(scanDir, outFile))
+	row("Output",   outFile+" (current directory)")
 	row("Parallel", fmt.Sprintf("%d sources", parallel))
 	row("Timeout",  fmt.Sprintf("%ds / source", timeout))
 	eprintf("  %s└%s%s%s┘%s\n\n", bold+cyan, reset, line, bold+cyan, reset)

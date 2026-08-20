@@ -144,11 +144,10 @@ Options:
 
 ## 📁 Output
 
-Each scan writes results to `scans/<domain>_parallel/`:
+Each scan writes results directly to the current working directory:
 
 ```
-scans/example_com_parallel/
-└── subdomains.txt  # Final unique, sorted, and deduplicated subdomains
+./subdomains.txt  # Final unique, sorted, and deduplicated subdomains
 ```
 
 ---

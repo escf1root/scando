@@ -28,7 +28,7 @@ const (
 // Options controls what output.Write produces.
 type Options struct {
 	Domain      string
-	ScanDir     string        // root scan directory (scans/<name>/)
+	ScanDir     string        // output directory (current working directory)
 	OutputFile  string        // final merged subdomains file (just filename)
 	MaxParallel int
 	TotalTime   time.Duration
