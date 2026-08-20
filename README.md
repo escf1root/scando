@@ -27,7 +27,7 @@ Scando v3 is a **high-performance, native Go-based parallel subdomain enumeratio
   - **External Binary Wrappers** (Optional): Subfinder, Assetfinder, Findomain.
 - **🔄 Built-in Automatic Updates**: Easily update via `scando -update`.
 - **🛡️ Graceful Degredation**: If an optional external tool isn't installed, Scando gracefully skips it without failing.
-- **📊 Structured JSON & Clean Output**: Deduplicated output, raw per-tool result files, and comprehensive JSON scan metadata (`stats/report.json`).
+- **📊 Clean Deduplicated Output**: All results merged, sorted, and deduplicated into a single `subdomains.txt` file.
 
 ---
 
@@ -142,17 +142,13 @@ Options:
 
 ---
 
-## 📁 Output Directory Structure
+## 📁 Output
 
-Each scan creates a clean output layout in `scans/<domain>_parallel/`:
+Each scan writes results to `scans/<domain>_parallel/`:
 
 ```
 scans/example_com_parallel/
-├── raw/            # Individual output from each tool (crtsh.txt, otx.txt, etc.)
-├── logs/           # Scan logs
-├── stats/          # report.json with execution statistics and timing
-├── subdomains.txt  # Final unique, sorted, and deduplicated subdomains
-└── README.md       # Human-readable scan report summary
+└── subdomains.txt  # Final unique, sorted, and deduplicated subdomains
 ```
 
 ---
