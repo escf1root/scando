@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/escf1root/scando/internal/sources"
+	"github.com/escf1root/scando/v3/internal/sources"
 )
 
 // ANSI color codes

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/escf1root/scando/internal/sources"
+	"github.com/escf1root/scando/v3/internal/sources"
 )
 
 // ScanReport mirrors stats/report.json from original scando.sh.

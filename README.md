@@ -38,7 +38,7 @@ Scando v3 is a **high-performance, native Go-based parallel subdomain enumeratio
 Requires [Go 1.21+](https://go.dev/doc/install). Run:
 
 ```bash
-go install github.com/escf1root/scando/cmd/scando@latest
+go install github.com/escf1root/scando/v3/cmd/scando@latest
 ```
 
 *Make sure `$GOPATH/bin` or `~/go/bin` is in your system `$PATH`.*
@@ -77,7 +77,7 @@ scando -update
 Or re-run `go install`:
 
 ```bash
-go install github.com/escf1root/scando/cmd/scando@latest
+go install github.com/escf1root/scando/v3/cmd/scando@latest
 ```
 
 ---

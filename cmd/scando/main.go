@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/escf1root/scando/internal/output"
-	"github.com/escf1root/scando/internal/runner"
+	"github.com/escf1root/scando/v3/internal/output"
+	"github.com/escf1root/scando/v3/internal/runner"
 )
 
 const version = "3.0.0"
@@ -55,7 +55,7 @@ func main() {
 		if cmd == "" {
 			cmd = "go"
 		}
-		execCmd := exec.Command(cmd, "install", "-v", "github.com/escf1root/scando/cmd/scando@latest")
+		execCmd := exec.Command(cmd, "install", "-v", "github.com/escf1root/scando/v3/cmd/scando@latest")
 		execCmd.Stdout = os.Stdout
 		execCmd.Stderr = os.Stderr
 		if err := execCmd.Run(); err != nil {
