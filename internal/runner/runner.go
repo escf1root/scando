@@ -85,7 +85,7 @@ func New(cfg Config) *Runner {
 }
 
 // Run executes all sources in parallel and returns collected results.
-func (r *Runner) Run(domain string) []*sources.Result {
+func (r *Runner) Run(ctx context.Context, domain string) []*sources.Result {
 	total := len(r.sources)
 	results := make([]*sources.Result, total)
 	var completed int64
@@ -102,13 +102,27 @@ func (r *Runner) Run(domain string) []*sources.Result {
 		wg.Add(1)
 		go func(idx int, s sources.Source) {
 			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
+			
+			select {
+			case sem <- struct{}{}:
+				defer func() { <-sem }()
+			case <-ctx.Done():
+				results[idx] = &sources.Result{
+					Name:    s.Name(),
+					Err:     ctx.Err(),
+					Skipped: false,
+				}
+				done := int(atomic.AddInt64(&completed, 1))
+				if !r.cfg.Silent {
+					r.printSourceResult(results[idx], done, total)
+				}
+				return
+			}
 
-			ctx, cancel := context.WithTimeout(context.Background(), r.cfg.Timeout)
+			runCtx, cancel := context.WithTimeout(ctx, r.cfg.Timeout)
 			defer cancel()
 
-			res := s.Enumerate(ctx, domain, r.client)
+			res := s.Enumerate(runCtx, domain, r.client)
 			results[idx] = &res
 
 			done := int(atomic.AddInt64(&completed, 1))
